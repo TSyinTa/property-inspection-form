@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>物业整治检查表 - 紧凑版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: white;
+      padding-bottom: 80px;
+    }
+    .header {
+      background: #1a1a1a;
+      color: white;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 {
+      font-size: 17px;
+      font-weight: 500;
+    }
+    .header-info {
+      display: flex;
+      gap: 16px;
+      margin-top: 8px;
+      font-size: 13px;
+      opacity: 0.8;
+    }
+    .section-header {
+      background: #f8f9fa;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #495057;
+      border-left: 4px solid #228be6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-count {
+      font-size: 12px;
+      color: #868e96;
+      font-weight: normal;
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f3f5;
+      min-height: 56px;
+    }
+    .check-row:active {
+      background: #f8f9fa;
+    }
+    .check-icon {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #adb5bd;
+      border-radius: 4px;
+      margin-right: 12px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .check-icon.checked {
+      background: #228be6;
+      border-color: #228be6;
+    }
+    .check-label {
+      flex: 1;
+      font-size: 15px;
+      color: #212529;
+      line-height: 1.4;
+    }
+    .detail-input {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #f8f9fa;
+      display: none;
+    }
+    .detail-input.show {
+      display: block;
+    }
+    .detail-input::placeholder {
+      color: #adb5bd;
+    }
+    .input-group {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f3f5;
+    }
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      color: #868e96;
+      margin-bottom: 6px;
+    }
+    .input-group input {
+      width: 100%;
+      border: none;
+      font-size: 16px;
+      color: #212529;
+      padding: 0;
+      background: transparent;
+    }
+    .input-group input:focus {
+      outline: none;
+    }
+    .signature-section {
+      padding: 16px;
+      background: #f8f9fa;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .signature-box {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .signature-box .label {
+      font-size: 12px;
+      color: #868e96;
+      margin-bottom: 8px;
+    }
+    .signature-box .pad {
+      height: 60px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #adb5bd;
+      font-size: 13px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .signature-box .pad canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .signature-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .signature-modal.active {
+      display: flex;
+    }
+    .signature-modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      overflow: hidden;
+    }
+    .signature-modal-header {
+      padding: 16px;
+      border-bottom: 1px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .signature-modal-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .signature-modal-header button {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #868e96;
+      cursor: pointer;
+    }
+    .signature-canvas-container {
+      padding: 16px;
+      background: #f8f9fa;
+    }
+    .signature-canvas-container canvas {
+      width: 100%;
+      height: 200px;
+      background: white;
+      border-radius: 8px;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .signature-modal-actions {
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+    }
+    .signature-modal-actions button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .btn-clear {
+      background: #e9ecef;
+      color: #495057;
+    }
+    .btn-save {
+      background: #228be6;
+      color: white;
+    }
+    .declaration-section {
+      padding: 16px;
+      background: #f8f9fa;
+      margin-top: 12px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .declaration-text {
+      font-size: 14px;
+      color: #212529;
+      line-height: 1.8;
+      text-align: justify;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .declaration-text .highlight {
+      color: #228be6;
+      font-weight: 600;
+      text-decoration: underline;
+      text-decoration-color: #228be6;
+    }
+    .declaration-text .placeholder {
+      color: #adb5bd;
+      font-style: italic;
+    }
+    .fab {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      background: #228be6;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 24px;
+      box-shadow: 0 4px 12px rgba(34,139,230,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .summary-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e9ecef;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .summary-text {
+      font-size: 14px;
+      color: #495057;
+    }
+    .summary-text span {
+      color: #228be6;
+      font-weight: 600;
+      font-size: 18px;
+    }
+    .btn-submit {
+      background: #228be6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>物业集中整治问题调查表</h1>
+    <div class="header-info">
+      <span>检查时间: <span id="checkDate">2025-05-12</span></span>
+      <span>进度: 4/18</span>
+    </div>
+  </div>
+
+  <!-- 基础信息 -->
+  <div class="section-header">
+    基础信息
+    <span class="section-count">5项</span>
+  </div>
+  <div class="input-group">
+    <label>小区名称</label>
+    <input type="text" placeholder="请输入">
+  </div>
+  <div class="input-group">
+    <label>所属社区</label>
+    <input type="text" placeholder="请输入">
+  </div>
+  <div class="input-group">
+    <label>所属街道</label>
+    <input type="text" placeholder="请输入">
+  </div>
+  <div class="input-group">
+    <label>区县市</label>
+    <input type="text" id="districtInput" placeholder="请输入" oninput="updateDistrict()">
+  </div>
+
+  <!-- 部署情况 -->
+  <div class="section-header">
+    1. 部署情况
+    <span class="section-count">1项</span>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      未部署相关工作，业委会或物业公司不知情
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+
+  <!-- 履约情况 -->
+  <div class="section-header">
+    2. 履约情况
+    <span class="section-count">4项</span>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      未按照物业服务合同约定内容和标准提供服务
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      未履行信息公示和报告义务
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      未履行物业服务企业的移交义务
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      物业服务合同未在属地备案
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+
+  <!-- 公共收益情况 -->
+  <div class="section-header">
+    3. 公共收益情况
+    <span class="section-count">4项</span>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      公共收益收支使用和审计等制度落实不到位
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      擅自利用小区公共部位和共有设施经营
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      未经决策程序随意上马实施设备维修、工程项目
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      违规侵占小区公共收益
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+
+  <!-- 业委会履职 -->
+  <div class="section-header">
+    4. 业委会履职
+    <span class="section-count">4项</span>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      业委会物管委组建运行不规范
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      未建立小区事务公开信息公示制度
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      未正常履职进而损害业主利益问题
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      其他不规范情况
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+
+  <!-- 5. 其他问题 -->
+  <div class="section-header">
+    5. 其他问题
+    <span class="section-count">4项</span>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      共用设施设备维护不到位
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      使用15年以上、运行故障率高、配置水平低、群众更新意愿强烈的老旧电梯更新不及时
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      住宅专项维修资金管理使用不规范
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+  <div class="check-row" onclick="toggleCheck(this)">
+    <div class="check-icon"></div>
+    <div class="check-label">
+      群众反映强烈的其他物业服务问题，如物业服务企业合同终止后拒不退出物业服务项目，以停止供水、供电、供气、供热，限购水电气热费用，限制开启门禁、乘用电梯、停放车辆等方式催缴物业费
+      <input type="text" class="detail-input" placeholder="请输入具体情况" onclick="event.stopPropagation()">
+    </div>
+  </div>
+
+  <!-- 签名 -->
+  <div class="section-header">签字确认</div>
+  <div class="signature-section">
+    <div class="signature-grid">
+      <div class="signature-box">
+        <div class="label">检查人</div>
+        <div class="pad" onclick="openSignature('inspector')" id="pad-inspector">
+          <span>点击签名</span>
+        </div>
+      </div>
+      <div class="signature-box">
+        <div class="label">主管部门</div>
+        <div class="pad" onclick="openSignature('department')" id="pad-department">
+          <span>点击签名</span>
+        </div>
+      </div>
+      <div class="signature-box">
+        <div class="label">小区代表</div>
+        <div class="pad" onclick="openSignature('community')" id="pad-community">
+          <span>点击签名</span>
+        </div>
+      </div>
+      <div class="signature-box">
+        <div class="label">物业代表</div>
+        <div class="pad" onclick="openSignature('property')" id="pad-property">
+          <span>点击签名</span>
+        </div>
+      </div>
+      <div class="signature-box" style="grid-column: 1 / -1;">
+        <div class="label">业委会物管委代表</div>
+        <div class="pad" onclick="openSignature('committee')" id="pad-committee">
+          <span>点击签名</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 整改说明 -->
+  <div class="declaration-section">
+    <div class="declaration-text">
+      上述存在问题，已由各方签字认可。请<span class="highlight" id="districtName">【请输入区县市】</span>行业主管部门根据清单中存在的问题，以点带面，按规范要求全数对照检查，督促相关小区、物业服务企业、业委会（物管委）认真整改。整改结果需经你单位复查认可，并于<span class="highlight" id="deadlineDate">【计算中】</span>前上报绍兴市建设局，市建设局将适时进行抽查复核，对整改不到位、拒不整改的单位将按相关规定处理。
+    </div>
+  </div>
+
+  <!-- 签名弹窗 -->
+  <div class="signature-modal" id="signatureModal">
+    <div class="signature-modal-content">
+      <div class="signature-modal-header">
+        <h3 id="modalTitle">手写签名</h3>
+        <button onclick="closeSignature()">&times;</button>
+      </div>
+      <div class="signature-canvas-container">
+        <canvas id="signatureCanvas"></canvas>
+      </div>
+      <div class="signature-modal-actions">
+        <button class="btn-clear" onclick="clearCanvas()">清空重写</button>
+        <button class="btn-save" onclick="saveSignature()">确认签名</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 80px;"></div>
+
+  <div class="summary-bar">
+    <div class="summary-text">发现问题 <span id="issueCount">0</span> 项</div>
+    <button class="btn-submit" onclick="generatePDF()">生成PDF</button>
+  </div>
+
+  <script>
+    function toggleCheck(el) {
+      const icon = el.querySelector('.check-icon');
+      const detailInput = el.querySelector('.detail-input');
+      icon.classList.toggle('checked');
+      if (icon.classList.contains('checked')) {
+        icon.innerHTML = '✓';
+        icon.style.color = 'white';
+        icon.style.fontSize = '12px';
+        if (detailInput) detailInput.classList.add('show');
+      } else {
+        icon.innerHTML = '';
+        if (detailInput) detailInput.classList.remove('show');
+      }
+      updateIssueCount();
+    }
+
+    // 自动填充区县市名称
+    function updateDistrict() {
+      const district = document.getElementById('districtInput').value.trim();
+      const districtNameEl = document.getElementById('districtName');
+      if (district) {
+        districtNameEl.textContent = district;
+        districtNameEl.classList.remove('placeholder');
+      } else {
+        districtNameEl.textContent = '【请输入区县市】';
+        districtNameEl.classList.add('placeholder');
+      }
+    }
+
+    // 计算加上工作日的日期
+    function addWorkDays(startDate, days) {
+      let date = new Date(startDate);
+      let addedDays = 0;
+      
+      while (addedDays < days) {
+        date.setDate(date.getDate() + 1);
+        // 跳过周末（0 = 周日, 6 = 周六）
+        if (date.getDay() !== 0 && date.getDay() !== 6) {
+          addedDays++;
+        }
+      }
+      
+      return date;
+    }
+
+    // 更新截止日期
+    function updateDeadline() {
+      const checkDateText = document.getElementById('checkDate').textContent;
+      const checkDate = new Date(checkDateText);
+      const deadlineDate = addWorkDays(checkDate, 10);
+      
+      const year = deadlineDate.getFullYear();
+      const month = deadlineDate.getMonth() + 1;
+      const day = deadlineDate.getDate();
+      
+      document.getElementById('deadlineDate').textContent = `${year}年${month}月${day}日`;
+    }
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      updateDeadline();
+    });
+
+    // 签名功能
+    let currentSignatureId = null;
+    let canvas, ctx;
+    let isDrawing = false;
+    let hasDrawn = false;
+    let lastX = 0, lastY = 0;
+
+    const signatures = {};
+
+    function openSignature(id) {
+      currentSignatureId = id;
+      const titles = {
+        'inspector': '检查人签名',
+        'department': '主管部门签名',
+        'community': '小区代表签名',
+        'property': '物业代表签名',
+        'committee': '业委会物管委代表签名'
+      };
+      document.getElementById('modalTitle').textContent = titles[id] || '手写签名';
+      document.getElementById('signatureModal').classList.add('active');
+      
+      setTimeout(initCanvas, 10);
+    }
+
+    function closeSignature() {
+      document.getElementById('signatureModal').classList.remove('active');
+      currentSignatureId = null;
+    }
+
+    function initCanvas() {
+      canvas = document.getElementById('signatureCanvas');
+      const container = canvas.parentElement;
+      
+      // 设置画布尺寸
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width - 32;
+      canvas.height = 200;
+      
+      // 重置绘制状态
+      hasDrawn = false;
+      
+      ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      // 如果已有签名，加载它
+      if (signatures[currentSignatureId]) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          hasDrawn = true;
+        };
+        img.src = signatures[currentSignatureId];
+      }
+
+      // 绑定事件
+      canvas.removeEventListener('mousedown', startDrawing);
+      canvas.removeEventListener('mousemove', draw);
+      canvas.removeEventListener('mouseup', stopDrawing);
+      canvas.removeEventListener('mouseout', stopDrawing);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseout', stopDrawing);
+      
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX || e.touches[0].clientX) - rect.left,
+        y: (e.clientY || e.touches[0].clientY) - rect.top
+      };
+    }
+
+    function startDrawing(e) {
+      isDrawing = true;
+      const pos = getPos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      
+      lastX = pos.x;
+      lastY = pos.y;
+      hasDrawn = true;
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    function handleTouchStart(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      lastX = touch.clientX - rect.left;
+      lastY = touch.clientY - rect.top;
+      isDrawing = true;
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      if (!isDrawing) return;
+      
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      
+      lastX = x;
+      lastY = y;
+      hasDrawn = true;
+    }
+
+    function handleTouchEnd(e) {
+      e.preventDefault();
+      isDrawing = false;
+    }
+
+    function clearCanvas() {
+      if (ctx && canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hasDrawn = false;
+      }
+    }
+
+    function saveSignature() {
+      if (!canvas || !currentSignatureId) return;
+      
+      // 检查是否有签名内容
+      if (!hasDrawn) {
+        alert('请先签名');
+        return;
+      }
+      
+      // 保存签名
+      signatures[currentSignatureId] = canvas.toDataURL('image/png');
+      
+      // 更新显示
+      const pad = document.getElementById('pad-' + currentSignatureId);
+      pad.innerHTML = '<canvas></canvas>';
+      const previewCanvas = pad.querySelector('canvas');
+      previewCanvas.width = pad.offsetWidth;
+      previewCanvas.height = pad.offsetHeight;
+      const previewCtx = previewCanvas.getContext('2d');
+      
+      const img = new Image();
+      img.onload = () => {
+        previewCtx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
+      };
+      img.src = signatures[currentSignatureId];
+      
+      closeSignature();
+    }
+
+    // 点击遮罩关闭
+    document.getElementById('signatureModal').addEventListener('click', (e) => {
+      if (e.target.id === 'signatureModal') closeSignature();
+    });
+
+    // 更新问题计数
+    function updateIssueCount() {
+      const checkedCount = document.querySelectorAll('.check-icon.checked').length;
+      document.getElementById('issueCount').textContent = checkedCount;
+    }
+
+    // 生成PDF并清空数据
+    function generatePDF() {
+      // 获取基础信息中的小区名称
+      const communityName = document.querySelector('.input-group input[placeholder="请输入"]').value.trim();
+      const filename = communityName ? `${communityName}物业集中整治问题调查表.pdf` : `物业集中整治问题调查表.pdf`;
+      
+      // 配置PDF选项
+      const opt = {
+        margin: [10, 10, 15, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { 
+          scale: 1.5,
+          useCORS: true,
+          logging: false,
+          scrollY: 0,
+          windowHeight: document.documentElement.scrollHeight
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait'
+        },
+        pagebreak: { 
+          mode: ['css', 'legacy'],
+          avoid: ['.declaration-section', '.signature-section', '.check-row']
+        }
+      };
+      
+      // 生成PDF
+      html2pdf().set(opt).from(document.body).save().then(() => {
+        // PDF生成完成后清空所有数据
+        clearAllData();
+      });
+    }
+
+    // 清空所有数据
+    function clearAllData() {
+      // 1. 清空所有输入框
+      const inputs = document.querySelectorAll('.input-group input');
+      inputs.forEach(input => {
+        input.value = '';
+      });
+      
+      // 2. 清空区县市显示
+      updateDistrict();
+      
+      // 3. 清空所有勾选和详情输入框
+      const checkIcons = document.querySelectorAll('.check-icon');
+      checkIcons.forEach(icon => {
+        icon.classList.remove('checked');
+        icon.innerHTML = '';
+      });
+      
+      const detailInputs = document.querySelectorAll('.detail-input');
+      detailInputs.forEach(input => {
+        input.value = '';
+        input.classList.remove('show');
+      });
+      
+      updateIssueCount();
+      
+      // 4. 清空所有签名
+      Object.keys(signatures).forEach(key => {
+        delete signatures[key];
+      });
+      
+      const pads = document.querySelectorAll('.signature-box .pad');
+      pads.forEach(pad => {
+        pad.innerHTML = '<span>点击签名</span>';
+      });
+      
+      // 5. 重置截止日期
+      updateDeadline();
+      
+      alert('数据已清空，可开始新的检查表格');
+    }
+
+    // 初始化计数
+    updateIssueCount();
+  </script>
+</body>
+</html>
